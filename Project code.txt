@@ -1,0 +1,71 @@
+#define BLYNK_TEMPLATE_ID "your_template_id"
+#define BLYNK_TEMPLATE_NAME "your_template_name"
+
+#include <Stepper.h>
+#include <BlynkSimpleEsp32.h> 
+
+// Define pins
+#define BUZZER_PIN  5 // Buzzer pin
+#define IR_SENSOR_PIN 4 // IR sensor pin
+
+// Define the number of steps per revolution
+const int stepsPerRevolution = 200;
+
+// Initialize the Stepper library
+Stepper myStepper(stepsPerRevolution, 14, 27, 26, 25); 
+
+// Define the delay between stepper rotations
+const unsigned long stepperDelay = 10000; // 1 second
+
+// Blynk authentication token
+char auth[] = "YourAuthToken";
+
+// Blynk timer object
+BlynkTimer timer;
+
+// Flag to indicate if medicine has been dispensed
+bool medicineDispensed = false;
+
+// Number of steps for a 45-degree rotation
+const int stepsFor45Degrees = stepsPerRevolution / 8;
+
+// Function to dispense medicine
+void dispenseMedicine() {
+  // Rotate the shaft by 45 degrees
+  myStepper.step(stepsFor45Degrees);
+  
+  // Set medicineDispensed flag to true
+  medicineDispensed = true;
+}
+
+// Function to handle timer event from Blynk
+BLYNK_WRITE(V1) {
+  // Get the time value from the timer widget in seconds
+  int timeInSeconds = param.asInt();
+
+  // Convert time to milliseconds
+  unsigned long timeInMillis = timeInSeconds * 1000;
+
+  // Schedule the dispenseMedicine function to be called after the specified time
+  timer.setTimeout(timeInMillis, dispenseMedicine);
+}
+
+void setup() {
+  // Set the speed of the motor in RPM
+  myStepper.setSpeed(100);
+
+  // Initialize the buzzer pin as an output
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW); // Initially turn off the buzzer
+
+  // Initialize the IR sensor pin as an input
+  pinMode(IR_SENSOR_PIN, INPUT);
+
+  // Initialize Blynk
+  Blynk.begin(auth, "YourWiFiSSID", "YourWiFiPassword");
+}
+
+void loop() {
+  Blynk.run(); // Continuously check for Blynk events
+  timer.run(); // Run Blynk's timer
+}
